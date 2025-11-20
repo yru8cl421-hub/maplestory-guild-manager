@@ -1,0 +1,2358 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>楓之谷 公會管理器</title>
+  <style>
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --accent:#6ee7b7;
+      --accent-hover:#5dd9a6;
+      --muted:#94a3b8;
+      --glass:rgba(255,255,255,0.04);
+      --danger:#ff6b6b;
+      --warning:#ffd93d;
+      --success:#51cf66;
+    }
+    *{box-sizing:border-box;font-family:Inter, system-ui, -apple-system, 'Noto Sans TC', 'Microsoft JhengHei', sans-serif}
+    body{margin:0;background:linear-gradient(180deg,#071029 0%, #081226 60%);color:#e6eef6;min-height:100vh;padding:18px}
+    
+    .app{max-width:1600px;margin:0 auto}
+    
+    header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:20px;
+      flex-wrap:wrap;
+      gap:12px;
+    }
+    h1{font-size:28px;margin:0;display:flex;align-items:center;gap:10px}
+    h1::before{content:'🍁';font-size:30px}
+    
+    .save-indicator{
+      font-size:12px;
+      color:var(--success);
+      padding:5px 12px;
+      background:rgba(81,207,102,0.1);
+      border-radius:12px;
+      border:1px solid rgba(81,207,102,0.2);
+    }
+    
+    .header-actions{display:flex;gap:8px;align-items:center}
+    
+    /* 標籤頁系統 */
+    .tabs{
+      display:flex;
+      gap:8px;
+      margin-bottom:20px;
+      border-bottom:2px solid rgba(255,255,255,0.05);
+    }
+    .tab{
+      padding:12px 24px;
+      background:transparent;
+      border:none;
+      color:var(--muted);
+      cursor:pointer;
+      transition:all 0.3s;
+      font-size:16px;
+      font-weight:600;
+      border-bottom:3px solid transparent;
+      margin-bottom:-2px;
+    }
+    .tab:hover{
+      color:#fff;
+      background:rgba(255,255,255,0.05);
+    }
+    .tab.active{
+      color:var(--accent);
+      border-bottom-color:var(--accent);
+    }
+    
+    .tab-content{display:none}
+    .tab-content.active{display:block}
+    
+    .card{
+      background:var(--card);
+      border-radius:12px;
+      padding:20px;
+      box-shadow:0 6px 18px rgba(2,6,23,0.6);
+      border:1px solid rgba(255,255,255,0.03);
+      transition:all 0.3s ease;
+      margin-bottom:16px;
+    }
+    .card:hover{border-color:rgba(255,255,255,0.06)}
+    
+    .card-title{
+      font-size:18px;
+      font-weight:700;
+      margin:0 0 20px 0;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      color:var(--accent);
+    }
+    
+    /* 角色管理頁面 */
+    .char-form{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
+      gap:16px;
+      margin-bottom:20px;
+    }
+    
+    .form-group{display:flex;flex-direction:column}
+    label{font-size:13px;color:var(--muted);margin-bottom:8px;font-weight:600}
+    input[type=text], select, input[type=number], textarea{
+      width:100%;
+      padding:10px 12px;
+      border-radius:8px;
+      border:1px solid rgba(255,255,255,0.08);
+      background:var(--glass);
+      color:inherit;
+      transition:all 0.2s;
+      font-size:14px;
+    }
+    textarea{
+      min-height:80px;
+      resize:vertical;
+      font-family:inherit;
+    }
+    select{
+      background:rgba(15,23,36,0.9);
+      cursor:pointer;
+    }
+    select option{
+      background:var(--card);
+      color:#e6eef6;
+    }
+    input:focus, select:focus, textarea:focus{
+      outline:none;
+      border-color:var(--accent);
+      background:rgba(110,231,183,0.05);
+    }
+    
+    .time-selects{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+    }
+    
+    .checkbox-group{
+      display:grid;
+      grid-template-columns:repeat(4, 1fr);
+      gap:8px;
+      margin-top:8px;
+    }
+    
+    .checkbox-label{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:8px;
+      background:rgba(255,255,255,0.03);
+      border:1px solid rgba(255,255,255,0.06);
+      border-radius:8px;
+      cursor:pointer;
+      transition:all 0.2s;
+      font-size:13px;
+    }
+    .checkbox-label:hover{
+      background:rgba(110,231,183,0.1);
+      border-color:rgba(110,231,183,0.3);
+    }
+    .checkbox-label input[type=checkbox]{
+      display:none;
+    }
+    .checkbox-label input[type=checkbox]:checked + span{
+      color:var(--accent);
+      font-weight:700;
+    }
+    .checkbox-label:has(input:checked){
+      background:rgba(110,231,183,0.15);
+      border-color:var(--accent);
+    }
+    
+    button{
+      appearance:none;
+      border:0;
+      padding:12px 20px;
+      border-radius:8px;
+      background:linear-gradient(135deg,#0ea5a6,#7dd3fc);
+      color:#052025;
+      font-weight:600;
+      cursor:pointer;
+      transition:all 0.2s;
+      font-size:14px;
+    }
+    button:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(110,231,183,0.3)}
+    button:active{transform:translateY(0)}
+    button:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+    
+    .btn-group{display:flex;gap:10px;margin-top:20px}
+    .btn-ghost{
+      background:transparent;
+      border:1px solid rgba(255,255,255,0.1);
+      color:var(--muted);
+    }
+    .btn-ghost:hover{
+      background:rgba(255,255,255,0.05);
+      border-color:rgba(255,255,255,0.15);
+      color:#fff;
+      box-shadow:none;
+    }
+    
+    .btn-danger{
+      background:linear-gradient(135deg,#ff6b6b,#ee5a6f);
+      color:#fff;
+    }
+    
+    .btn-small{padding:6px 12px;font-size:12px}
+    
+    /* 場次選擇按鈕 */
+    .times-btn, .edit-times-btn{
+      flex:1;
+      padding:8px 16px;
+      background:rgba(255,255,255,0.05);
+      border:1px solid rgba(255,255,255,0.1);
+      color:var(--muted);
+      font-size:13px;
+      font-weight:600;
+      border-radius:6px;
+      cursor:pointer;
+      transition:all 0.2s;
+    }
+    .times-btn:hover, .edit-times-btn:hover{
+      background:rgba(255,255,255,0.08);
+      border-color:rgba(255,255,255,0.2);
+      color:#fff;
+      transform:none;
+      box-shadow:none;
+    }
+    .times-btn.active, .edit-times-btn.active{
+      background:linear-gradient(135deg,#0ea5a6,#7dd3fc);
+      border-color:var(--accent);
+      color:#052025;
+    }
+    
+    /* 角色列表 */
+    .filter-bar{
+      display:flex;
+      gap:12px;
+      margin-bottom:16px;
+      align-items:center;
+    }
+    .filter-bar input{flex:1}
+    .filter-bar select{min-width:150px}
+    
+    .stats-row{
+      display:flex;
+      gap:16px;
+      padding:12px;
+      background:rgba(110,231,183,0.08);
+      border-radius:8px;
+      margin-bottom:16px;
+    }
+    .stat-item{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:14px;
+    }
+    .stat-value{font-weight:700;color:var(--accent)}
+    
+    .char-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));
+      gap:12px;
+      max-height:600px;
+      overflow-y:auto;
+      padding:4px;
+    }
+    .char-grid::-webkit-scrollbar{width:8px}
+    .char-grid::-webkit-scrollbar-track{background:transparent}
+    .char-grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:4px}
+    
+    .char-card{
+      background:linear-gradient(135deg, rgba(110,231,183,0.05), rgba(125,211,252,0.03));
+      border:1px solid rgba(110,231,183,0.15);
+      border-radius:10px;
+      padding:14px;
+      cursor:grab;
+      transition:all 0.2s;
+    }
+    .char-card:hover{
+      border-color:rgba(110,231,183,0.4);
+      transform:translateY(-2px);
+      box-shadow:0 4px 12px rgba(110,231,183,0.2);
+    }
+    .char-card.dragging{opacity:0.4;cursor:grabbing}
+    
+    .char-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:start;
+      margin-bottom:10px;
+    }
+    .char-name{font-size:16px;font-weight:700;margin-bottom:4px}
+    .char-job{
+      display:inline-block;
+      padding:4px 10px;
+      background:rgba(110,231,183,0.2);
+      color:var(--accent);
+      border-radius:6px;
+      font-size:12px;
+      font-weight:600;
+    }
+    .char-stats{
+      display:flex;
+      gap:12px;
+      margin:8px 0;
+      font-size:13px;
+      color:var(--muted);
+    }
+    .char-time{
+      font-size:11px;
+      color:var(--muted);
+      margin-top:8px;
+      padding-top:8px;
+      border-top:1px solid rgba(255,255,255,0.05);
+    }
+    .char-actions{
+      display:flex;
+      gap:6px;
+      margin-top:10px;
+    }
+    
+    /* 可用角色列表（隊伍管理頁面） */
+    .available-char-item{
+      background:linear-gradient(135deg, rgba(110,231,183,0.06), rgba(125,211,252,0.04));
+      border:1px solid rgba(110,231,183,0.2);
+      border-radius:8px;
+      padding:12px;
+      margin-bottom:8px;
+      cursor:grab;
+      transition:all 0.2s;
+      min-height:80px;
+    }
+    .available-char-item:hover{
+      border-color:rgba(110,231,183,0.4);
+      background:linear-gradient(135deg, rgba(110,231,183,0.1), rgba(125,211,252,0.06));
+      transform:translateX(3px);
+    }
+    .available-char-item.dragging{
+      opacity:0.4;
+      cursor:grabbing;
+    }
+    .available-char-item.assigned{
+      opacity:0.3;
+      cursor:not-allowed;
+      filter:grayscale(0.5);
+    }
+    .available-char-name{
+      font-weight:700;
+      font-size:14px;
+      margin-bottom:4px;
+    }
+    .available-char-meta{
+      font-size:11px;
+      color:var(--muted);
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+    .available-char-job{
+      display:inline-block;
+      padding:2px 6px;
+      background:rgba(110,231,183,0.2);
+      color:var(--accent);
+      border-radius:4px;
+      font-size:10px;
+      font-weight:600;
+    }
+    
+    /* 隊伍管理頁面 */
+    .team-layout{
+      display:grid;
+      grid-template-columns:320px 1fr 380px;
+      gap:20px;
+    }
+    
+    .team-workspace{
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+    }
+    
+    .toolbar{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    
+    .teams-container{
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      max-height:calc(100vh - 280px);
+      overflow-y:auto;
+      padding:4px;
+    }
+    .teams-container::-webkit-scrollbar{width:8px}
+    .teams-container::-webkit-scrollbar-track{background:transparent}
+    .teams-container::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:4px}
+    
+    .team-card{
+      background:linear-gradient(135deg, rgba(110,231,183,0.06), rgba(125,211,252,0.04));
+      border:2px solid rgba(110,231,183,0.2);
+      border-radius:12px;
+      padding:18px;
+      transition:all 0.3s;
+      cursor:pointer;
+    }
+    .team-card:hover{
+      border-color:rgba(110,231,183,0.4);
+      background:linear-gradient(135deg, rgba(110,231,183,0.1), rgba(125,211,252,0.06));
+      transform:translateX(4px);
+    }
+    .team-card.selected{
+      border-color:var(--accent);
+      background:linear-gradient(135deg, rgba(110,231,183,0.15), rgba(125,211,252,0.08));
+      box-shadow:0 4px 20px rgba(110,231,183,0.3);
+    }
+    .team-card.drag-over{
+      border-color:var(--warning);
+      background:rgba(255,211,61,0.15);
+    }
+    
+    .team-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:14px;
+    }
+    .team-name{
+      font-size:18px;
+      font-weight:700;
+      color:var(--accent);
+    }
+    .team-count{
+      padding:6px 12px;
+      background:rgba(255,255,255,0.08);
+      border-radius:8px;
+      font-size:13px;
+      font-weight:600;
+    }
+    
+    .team-members{
+      display:grid;
+      gap:8px;
+    }
+    .member-slot{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:10px 12px;
+      background:rgba(255,255,255,0.05);
+      border-radius:8px;
+      border:1px solid rgba(255,255,255,0.05);
+    }
+    .member-slot:hover{
+      background:rgba(255,255,255,0.08);
+    }
+    .member-info{flex:1}
+    .member-name{font-weight:600;font-size:14px}
+    .member-detail{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:2px;
+    }
+    
+    .empty-slot{
+      padding:12px;
+      border:2px dashed rgba(255,255,255,0.15);
+      border-radius:8px;
+      text-align:center;
+      color:var(--muted);
+      font-size:13px;
+      background:rgba(255,255,255,0.02);
+    }
+    
+    /* 隊伍資訊面板 */
+    .info-panel{
+      position:sticky;
+      top:20px;
+    }
+    
+    .info-section{margin-bottom:20px}
+    .info-label{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:600;
+      margin-bottom:10px;
+      text-transform:uppercase;
+      letter-spacing:0.5px;
+    }
+    .info-box{
+      padding:12px;
+      background:rgba(255,255,255,0.04);
+      border-radius:8px;
+      border:1px solid rgba(255,255,255,0.06);
+      margin-bottom:10px;
+    }
+    
+    .stats-grid{
+      display:grid;
+      grid-template-columns:repeat(2, 1fr);
+      gap:10px;
+    }
+    .stat-box{
+      padding:14px;
+      background:rgba(110,231,183,0.08);
+      border-radius:8px;
+      text-align:center;
+      border:1px solid rgba(110,231,183,0.2);
+    }
+    .stat-label{
+      font-size:11px;
+      color:var(--muted);
+      margin-bottom:6px;
+      text-transform:uppercase;
+    }
+    .stat-value-large{
+      font-size:24px;
+      font-weight:700;
+      color:var(--accent);
+    }
+    
+    .job-list{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .job-item{
+      display:flex;
+      justify-content:space-between;
+      padding:8px 12px;
+      background:rgba(255,255,255,0.04);
+      border-radius:6px;
+    }
+    
+    /* 出席管理頁面 */
+    .attendance-table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0 8px;
+    }
+    .attendance-row{
+      background:linear-gradient(135deg, rgba(110,231,183,0.04), rgba(125,211,252,0.02));
+      border:1px solid rgba(255,255,255,0.06);
+      border-radius:8px;
+    }
+    .attendance-row td{
+      padding:14px 16px;
+      border:none;
+    }
+    .attendance-row td:first-child{
+      border-top-left-radius:8px;
+      border-bottom-left-radius:8px;
+    }
+    .attendance-row td:last-child{
+      border-top-right-radius:8px;
+      border-bottom-right-radius:8px;
+    }
+    .attendance-row:hover{
+      background:linear-gradient(135deg, rgba(110,231,183,0.08), rgba(125,211,252,0.04));
+      border-color:rgba(110,231,183,0.2);
+    }
+    .char-name-cell{
+      font-weight:700;
+      font-size:15px;
+    }
+    .char-job-cell{
+      color:var(--muted);
+      font-size:13px;
+    }
+    .checkbox-cell{
+      text-align:center;
+      width:100px;
+    }
+    .attendance-checkbox{
+      width:24px;
+      height:24px;
+      cursor:pointer;
+      accent-color:var(--accent);
+    }
+    .status-icon{
+      font-size:24px;
+      cursor:pointer;
+      transition:all 0.2s;
+      user-select:none;
+    }
+    .status-icon:hover{
+      transform:scale(1.2);
+    }
+    .status-icon.checked{
+      filter:drop-shadow(0 0 4px var(--accent));
+    }
+    
+    /* Modal */
+    .modal{
+      position:fixed;
+      top:0;left:0;right:0;bottom:0;
+      background:rgba(7,16,41,0.9);
+      backdrop-filter:blur(6px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:2000;
+      padding:20px;
+    }
+    .modal.show{display:flex}
+    .modal-content{
+      background:var(--card);
+      border-radius:16px;
+      padding:28px;
+      max-width:550px;
+      width:100%;
+      max-height:90vh;
+      overflow-y:auto;
+      box-shadow:0 20px 60px rgba(0,0,0,0.6);
+      border:1px solid rgba(255,255,255,0.08);
+    }
+    .modal-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:24px;
+    }
+    .modal-title{font-size:20px;font-weight:700;margin:0}
+    .modal-body{margin-bottom:24px}
+    .modal-actions{
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+    }
+    
+    @media (max-width: 1400px){
+      .team-layout{
+        grid-template-columns:280px 1fr 340px;
+      }
+    }
+    
+    @media (max-width: 1200px){
+      .team-layout{
+        grid-template-columns:1fr;
+      }
+      .info-panel{
+        position:static;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <h1>楓之谷 公會管理器</h1>
+    <div class="header-actions">
+      <span class="save-indicator">✓ 自動儲存</span>
+      <button onclick="exportData()" class="btn-ghost btn-small">📤 匯出</button>
+      <button onclick="importData()" class="btn-ghost btn-small">📥 匯入</button>
+      <button onclick="clearAllData()" class="btn-danger btn-small">🗑️ 清除</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('chars')">👥 角色管理</button>
+    <button class="tab" onclick="switchTab('teams')">🎯 隊伍管理</button>
+    <button class="tab" onclick="switchTab('attendance')">📅 出席管理</button>
+  </div>
+
+  <!-- 角色管理頁面 -->
+  <div id="charsTab" class="tab-content active">
+    <div class="card">
+      <h2 class="card-title">➕ 新增角色</h2>
+      <form class="char-form" onsubmit="return false;">
+        <div class="form-group">
+          <label>角色名稱 *</label>
+          <input type="text" id="nameInput" placeholder="輸入角色名稱" required>
+        </div>
+        
+        <div class="form-group">
+          <label>職業 *</label>
+          <select id="jobSelect">
+            <option value="十字軍">十字軍</option>
+            <option value="騎士">騎士</option>
+            <option value="龍騎士">龍騎士</option>
+            <option value="弓箭手">弓箭手</option>
+            <option value="弩弓手">弩弓手</option>
+            <option value="冰雷大法師">冰雷大法師</option>
+            <option value="火毒大法師">火毒大法師</option>
+            <option value="祭司">祭司</option>
+            <option value="俠盜（刀賊）">俠盜（刀賊）</option>
+            <option value="刺客（鏢賊）">刺客（鏢賊）</option>
+            <option value="格鬥家">格鬥家</option>
+            <option value="神槍手">神槍手</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>等級</label>
+          <input type="number" id="levelInput" placeholder="輸入等級" min="1" max="300">
+        </div>
+        
+        <div class="form-group">
+          <label>戰力</label>
+          <input type="number" id="damageInput" placeholder="選填" min="0" step="0.1">
+        </div>
+      </form>
+      
+      <div class="form-group" style="margin-top:20px">
+        <label>遊玩時間 - 星期</label>
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="day1" value="一">
+            <span>週一</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="day2" value="二">
+            <span>週二</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="day3" value="三">
+            <span>週三</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="day4" value="四">
+            <span>週四</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="day5" value="五">
+            <span>週五</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="day6" value="六">
+            <span>週六</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="day7" value="日">
+            <span>週日</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="dayAll" value="全週">
+            <span>全週</span>
+          </label>
+        </div>
+      </div>
+      
+      <div class="form-group" style="margin-top:16px">
+        <label>遊玩時段</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end">
+          <select id="timeStart">
+            <option value="">開始時間</option>
+            <option value="00:00">00:00</option>
+            <option value="01:00">01:00</option>
+            <option value="02:00">02:00</option>
+            <option value="03:00">03:00</option>
+            <option value="04:00">04:00</option>
+            <option value="05:00">05:00</option>
+            <option value="06:00">06:00</option>
+            <option value="07:00">07:00</option>
+            <option value="08:00">08:00</option>
+            <option value="09:00">09:00</option>
+            <option value="10:00">10:00</option>
+            <option value="11:00">11:00</option>
+            <option value="12:00">12:00</option>
+            <option value="13:00">13:00</option>
+            <option value="14:00">14:00</option>
+            <option value="15:00">15:00</option>
+            <option value="16:00">16:00</option>
+            <option value="17:00">17:00</option>
+            <option value="18:00">18:00</option>
+            <option value="19:00">19:00</option>
+            <option value="20:00">20:00</option>
+            <option value="21:00">21:00</option>
+            <option value="22:00">22:00</option>
+            <option value="23:00">23:00</option>
+          </select>
+          <select id="timeEnd">
+            <option value="">結束時間</option>
+            <option value="01:00">01:00</option>
+            <option value="02:00">02:00</option>
+            <option value="03:00">03:00</option>
+            <option value="04:00">04:00</option>
+            <option value="05:00">05:00</option>
+            <option value="06:00">06:00</option>
+            <option value="07:00">07:00</option>
+            <option value="08:00">08:00</option>
+            <option value="09:00">09:00</option>
+            <option value="10:00">10:00</option>
+            <option value="11:00">11:00</option>
+            <option value="12:00">12:00</option>
+            <option value="13:00">13:00</option>
+            <option value="14:00">14:00</option>
+            <option value="15:00">15:00</option>
+            <option value="16:00">16:00</option>
+            <option value="17:00">17:00</option>
+            <option value="18:00">18:00</option>
+            <option value="19:00">19:00</option>
+            <option value="20:00">20:00</option>
+            <option value="21:00">21:00</option>
+            <option value="22:00">22:00</option>
+            <option value="23:00">23:00</option>
+            <option value="24:00">24:00</option>
+          </select>
+          <div style="display:flex;flex-direction:column;min-width:100px">
+            <label style="margin-bottom:8px;font-size:13px">場次</label>
+            <div style="display:flex;gap:8px">
+              <button type="button" class="times-btn active" data-times="1" onclick="selectTimes(1)">7場</button>
+              <button type="button" class="times-btn" data-times="2" onclick="selectTimes(2)">14場</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="btn-group">
+        <button id="addBtn" style="flex:1">➕ 新增角色</button>
+        <button id="clearBtn" class="btn-ghost">🔄 清空表單</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">📋 角色列表</h2>
+      
+      <div class="filter-bar">
+        <input type="text" id="filterName" placeholder="🔍 搜尋角色名稱...">
+        <select id="filterJob">
+          <option value="">所有職業</option>
+        </select>
+      </div>
+      
+      <div class="stats-row">
+        <div class="stat-item">
+          <span>總角色數：</span>
+          <span class="stat-value" id="totalChars">0</span>
+        </div>
+        <div class="stat-item">
+          <span>平均等級：</span>
+          <span class="stat-value" id="avgLevel">0</span>
+        </div>
+        <div class="stat-item">
+          <span>總戰力：</span>
+          <span class="stat-value" id="totalDamage">0</span>
+        </div>
+      </div>
+      
+      <div class="char-grid" id="charGrid"></div>
+    </div>
+  </div>
+
+  <!-- 隊伍管理頁面 -->
+  <div id="teamsTab" class="tab-content">
+    <div class="team-layout">
+      <!-- 左側：可用角色 -->
+      <div class="card">
+        <h2 class="card-title">👥 可用角色</h2>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+          <input type="text" id="teamFilterName" placeholder="🔍 搜尋角色名稱">
+          <select id="teamFilterJob">
+            <option value="">所有職業</option>
+          </select>
+          <select id="teamFilterDay">
+            <option value="">所有時間</option>
+            <option value="一">週一</option>
+            <option value="二">週二</option>
+            <option value="三">週三</option>
+            <option value="四">週四</option>
+            <option value="五">週五</option>
+            <option value="六">週六</option>
+            <option value="日">週日</option>
+            <option value="全週">全週</option>
+          </select>
+        </div>
+        <div id="availableStats" style="font-size:12px;color:var(--muted);margin-bottom:12px;padding:8px;background:rgba(110,231,183,0.08);border-radius:6px"></div>
+        <div id="availableChars" style="max-height:calc(100vh - 420px);overflow-y:auto;padding:4px"></div>
+      </div>
+      
+      <!-- 中間：隊伍列表 -->
+      <div class="team-workspace">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h2 class="card-title" style="margin:0">🎯 我的隊伍</h2>
+            <div class="toolbar">
+              <button onclick="createTeam()">➕ 新增隊伍</button>
+              <button onclick="autoTeam()" class="btn-ghost">🤖 智能組隊</button>
+            </div>
+          </div>
+          
+          <div class="teams-container" id="teamsContainer"></div>
+        </div>
+      </div>
+      
+      <!-- 右側：隊伍詳情 -->
+      <div class="info-panel">
+        <div class="card">
+          <h2 class="card-title">📊 隊伍詳情</h2>
+          <div id="teamInfo"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 出席管理頁面 -->
+  <div id="attendanceTab" class="tab-content">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <h2 class="card-title" style="margin:0">📅 成員出席管理</h2>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <button onclick="prevWeek()" class="btn-ghost btn-small">◀ 上週</button>
+          <div style="padding:8px 16px;background:rgba(110,231,183,0.1);border-radius:8px;border:1px solid rgba(110,231,183,0.3)">
+            <span style="font-weight:700;color:var(--accent)" id="currentWeek">2024年 第1週</span>
+          </div>
+          <button onclick="nextWeek()" class="btn-ghost btn-small">下週 ▶</button>
+          <button onclick="resetToCurrentWeek()" class="btn-ghost btn-small">📍 本週</button>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-item">
+          <span>總成員：</span>
+          <span class="stat-value" id="attTotalChars">0</span>
+        </div>
+        <div class="stat-item">
+          <span>已練功：</span>
+          <span class="stat-value" id="attTrainedCount">0</span>
+        </div>
+        <div class="stat-item">
+          <span>在公會：</span>
+          <span class="stat-value" id="attInGuildCount">0</span>
+        </div>
+        <div class="stat-item">
+          <span>出席率：</span>
+          <span class="stat-value" id="attRate">0%</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="markAllTrained()" class="btn-ghost btn-small">✅ 全部已練功</button>
+        <button onclick="markAllInGuild()" class="btn-ghost btn-small">🏰 全部在公會</button>
+        <button onclick="clearWeekData()" class="btn-danger btn-small">🗑️ 清除本週記錄</button>
+      </div>
+
+      <div style="max-height:calc(100vh - 380px);overflow-y:auto" id="attendanceList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 編輯角色 Modal -->
+<div class="modal" id="editModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">✏️ 編輯角色</h3>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>角色名稱</label>
+        <input type="text" id="editName">
+      </div>
+      
+      <div class="form-group">
+        <label>職業</label>
+        <select id="editJob">
+          <option value="十字軍">十字軍</option>
+          <option value="騎士">騎士</option>
+          <option value="龍騎士">龍騎士</option>
+          <option value="弓箭手">弓箭手</option>
+          <option value="弩弓手">弩弓手</option>
+          <option value="冰雷大法師">冰雷大法師</option>
+          <option value="火毒大法師">火毒大法師</option>
+          <option value="祭司">祭司</option>
+          <option value="俠盜（刀賊）">俠盜（刀賊）</option>
+          <option value="刺客（鏢賊）">刺客（鏢賊）</option>
+          <option value="格鬥家">格鬥家</option>
+          <option value="神槍手">神槍手</option>
+        </select>
+      </div>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label>等級</label>
+          <input type="number" id="editLevel" min="1" max="300">
+        </div>
+        <div class="form-group">
+          <label>戰力</label>
+          <input type="number" id="editDamage" min="0" step="0.1">
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>遊玩時間 - 星期</label>
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="editDay1" value="一">
+            <span>週一</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="editDay2" value="二">
+            <span>週二</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="editDay3" value="三">
+            <span>週三</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="editDay4" value="四">
+            <span>週四</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="editDay5" value="五">
+            <span>週五</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="editDay6" value="六">
+            <span>週六</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="editDay7" value="日">
+            <span>週日</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="editDayAll" value="全週">
+            <span>全週</span>
+          </label>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>遊玩時段</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end">
+          <select id="editTimeStart">
+            <option value="">開始時間</option>
+            <option value="00:00">00:00</option>
+            <option value="01:00">01:00</option>
+            <option value="02:00">02:00</option>
+            <option value="03:00">03:00</option>
+            <option value="04:00">04:00</option>
+            <option value="05:00">05:00</option>
+            <option value="06:00">06:00</option>
+            <option value="07:00">07:00</option>
+            <option value="08:00">08:00</option>
+            <option value="09:00">09:00</option>
+            <option value="10:00">10:00</option>
+            <option value="11:00">11:00</option>
+            <option value="12:00">12:00</option>
+            <option value="13:00">13:00</option>
+            <option value="14:00">14:00</option>
+            <option value="15:00">15:00</option>
+            <option value="16:00">16:00</option>
+            <option value="17:00">17:00</option>
+            <option value="18:00">18:00</option>
+            <option value="19:00">19:00</option>
+            <option value="20:00">20:00</option>
+            <option value="21:00">21:00</option>
+            <option value="22:00">22:00</option>
+            <option value="23:00">23:00</option>
+          </select>
+          <select id="editTimeEnd">
+            <option value="">結束時間</option>
+            <option value="01:00">01:00</option>
+            <option value="02:00">02:00</option>
+            <option value="03:00">03:00</option>
+            <option value="04:00">04:00</option>
+            <option value="05:00">05:00</option>
+            <option value="06:00">06:00</option>
+            <option value="07:00">07:00</option>
+            <option value="08:00">08:00</option>
+            <option value="09:00">09:00</option>
+            <option value="10:00">10:00</option>
+            <option value="11:00">11:00</option>
+            <option value="12:00">12:00</option>
+            <option value="13:00">13:00</option>
+            <option value="14:00">14:00</option>
+            <option value="15:00">15:00</option>
+            <option value="16:00">16:00</option>
+            <option value="17:00">17:00</option>
+            <option value="18:00">18:00</option>
+            <option value="19:00">19:00</option>
+            <option value="20:00">20:00</option>
+            <option value="21:00">21:00</option>
+            <option value="22:00">22:00</option>
+            <option value="23:00">23:00</option>
+            <option value="24:00">24:00</option>
+          </select>
+          <div style="display:flex;flex-direction:column;min-width:100px">
+            <label style="margin-bottom:8px;font-size:13px">場次</label>
+            <div style="display:flex;gap:8px">
+              <button type="button" class="edit-times-btn" data-times="1" onclick="selectEditTimes(1)">7場</button>
+              <button type="button" class="edit-times-btn" data-times="2" onclick="selectEditTimes(2)">14場</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button onclick="closeEditModal()" class="btn-ghost">取消</button>
+      <button onclick="saveEdit()">💾 儲存</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="importFile" accept=".json" style="display:none">
+
+<script>
+// ==================== 資料結構 ====================
+let chars = [];
+let teams = [];
+let selectedTeamId = null;
+let editingCharId = null;
+let currentTab = 'chars';
+
+// 出席管理
+let attendance = {}; // 格式: { "2024-W01": { "charId": { trained: true, inGuild: true } } }
+let currentWeekKey = '';
+
+// 場次選擇
+let selectedTimes = 1;
+let selectedEditTimes = 1;
+
+// ==================== 場次選擇功能 ====================
+function selectTimes(times){
+  selectedTimes = times;
+  document.querySelectorAll('.times-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
+}
+
+function selectEditTimes(times){
+  selectedEditTimes = times;
+  document.querySelectorAll('.edit-times-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
+}
+
+// ==================== 標籤頁切換 ====================
+function switchTab(tabName){
+  currentTab = tabName;
+  
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  
+  event.target.classList.add('active');
+  document.getElementById(tabName + 'Tab').classList.add('active');
+  
+  render();
+}
+
+// ==================== 時間選擇輔助 ====================
+function getSelectedDays(prefix = ''){
+  const days = [];
+  // 處理 prefix: 空字符串 -> '', 'edit' -> 'editD'
+  let idPrefix = '';
+  if(prefix){
+    idPrefix = prefix + 'D'; // 'edit' + 'D' = 'editD'
+  }
+  
+  for(let i = 1; i <= 7; i++){
+    const checkboxId = idPrefix ? `${idPrefix}ay${i}` : `day${i}`;
+    const checkbox = document.getElementById(checkboxId);
+    if(checkbox && checkbox.checked){
+      days.push(checkbox.value);
+    }
+  }
+  const allCheckboxId = idPrefix ? `${idPrefix}ayAll` : `dayAll`;
+  const allCheckbox = document.getElementById(allCheckboxId);
+  if(allCheckbox && allCheckbox.checked){
+    return ['全週'];
+  }
+  return days;
+}
+
+function setSelectedDays(days, prefix = ''){
+  // 處理 prefix: 空字符串 -> '', 'edit' -> 'editD'
+  let idPrefix = '';
+  if(prefix){
+    idPrefix = prefix + 'D'; // 'edit' + 'D' = 'editD'
+  }
+  
+  for(let i = 1; i <= 7; i++){
+    const checkboxId = idPrefix ? `${idPrefix}ay${i}` : `day${i}`;
+    const checkbox = document.getElementById(checkboxId);
+    if(checkbox) checkbox.checked = false;
+  }
+  const allCheckboxId = idPrefix ? `${idPrefix}ayAll` : `dayAll`;
+  const allCheckbox = document.getElementById(allCheckboxId);
+  if(allCheckbox) allCheckbox.checked = false;
+  
+  if(!days || !Array.isArray(days)) return;
+  
+  if(days.includes('全週')){
+    if(allCheckbox) allCheckbox.checked = true;
+    return;
+  }
+  
+  days.forEach(day => {
+    const dayMap = {'一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '日': 7};
+    const index = dayMap[day];
+    if(index){
+      const checkboxId = idPrefix ? `${idPrefix}ay${index}` : `day${index}`;
+      const checkbox = document.getElementById(checkboxId);
+      if(checkbox) checkbox.checked = true;
+    }
+  });
+}
+
+function formatTimeDisplay(days, timeStart, timeEnd){
+  if(!days || days.length === 0) return '';
+  
+  let result = '⏰ ';
+  if(days.includes('全週')){
+    result += '全週';
+  } else {
+    result += days.map(d => '週' + d).join('、');
+  }
+  
+  if(timeStart && timeEnd){
+    result += ` ${timeStart}-${timeEnd}`;
+  } else if(timeStart){
+    result += ` ${timeStart}起`;
+  } else if(timeEnd){
+    result += ` ${timeEnd}前`;
+  }
+  
+  return result;
+}
+
+// ==================== 儲存/載入 ====================
+function saveToLocal(){
+  localStorage.setItem('maplestory_chars', JSON.stringify(chars));
+  localStorage.setItem('maplestory_teams', JSON.stringify(teams));
+  localStorage.setItem('maplestory_attendance', JSON.stringify(attendance));
+}
+
+function loadFromLocal(){
+  const savedChars = localStorage.getItem('maplestory_chars');
+  const savedTeams = localStorage.getItem('maplestory_teams');
+  const savedAttendance = localStorage.getItem('maplestory_attendance');
+  
+  if(savedChars) chars = JSON.parse(savedChars);
+  if(savedTeams) teams = JSON.parse(savedTeams);
+  if(savedAttendance) attendance = JSON.parse(savedAttendance);
+  
+  initCurrentWeek();
+  render();
+}
+
+// ==================== 角色管理 ====================
+function addChar(){
+  const name = document.getElementById('nameInput').value.trim();
+  const job = document.getElementById('jobSelect').value;
+  const levelInput = document.getElementById('levelInput').value;
+  const level = levelInput ? parseInt(levelInput) : 1;
+  const damage = parseFloat(document.getElementById('damageInput').value) || 0;
+  const days = getSelectedDays();
+  const timeStart = document.getElementById('timeStart').value;
+  const timeEnd = document.getElementById('timeEnd').value;
+  const times = selectedTimes;
+  
+  if(!name){
+    alert('請輸入角色名稱');
+    return;
+  }
+  
+  if(chars.some(c => c.name === name)){
+    alert('角色名稱已存在');
+    return;
+  }
+  
+  const char = {
+    id: Date.now().toString(),
+    name,
+    job,
+    level,
+    damage,
+    availableDays: days,
+    timeStart: timeStart || '',
+    timeEnd: timeEnd || '',
+    times: times
+  };
+  
+  chars.push(char);
+  saveToLocal();
+  render();
+  
+  // 清空表單
+  document.getElementById('nameInput').value = '';
+  document.getElementById('levelInput').value = '';
+  document.getElementById('damageInput').value = '';
+  setSelectedDays([]);
+  document.getElementById('timeStart').value = '';
+  document.getElementById('timeEnd').value = '';
+  document.getElementById('nameInput').focus();
+}
+
+function deleteChar(id){
+  if(!confirm('確定要刪除這個角色嗎？')){
+    return;
+  }
+  
+  teams.forEach(t => {
+    if(t.members) {
+      t.members = t.members.filter(m => m !== id);
+    }
+  });
+  
+  chars = chars.filter(c => c.id !== id);
+  saveToLocal();
+  render();
+}
+
+function openEditModal(id){
+  const char = chars.find(c => c.id === id);
+  if(!char) return;
+  
+  editingCharId = id;
+  document.getElementById('editName').value = char.name;
+  document.getElementById('editJob').value = char.job;
+  document.getElementById('editLevel').value = char.level;
+  document.getElementById('editDamage').value = char.damage || '';
+  
+  setSelectedDays(char.availableDays || [], 'edit');
+  document.getElementById('editTimeStart').value = char.timeStart || '';
+  document.getElementById('editTimeEnd').value = char.timeEnd || '';
+  
+  // 設置場次選擇按鈕
+  selectedEditTimes = char.times || 1;
+  document.querySelectorAll('.edit-times-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if(parseInt(btn.dataset.times) === selectedEditTimes){
+      btn.classList.add('active');
+    }
+  });
+  
+  document.getElementById('editModal').classList.add('show');
+}
+
+function closeEditModal(){
+  document.getElementById('editModal').classList.remove('show');
+  editingCharId = null;
+}
+
+function saveEdit(){
+  const char = chars.find(c => c.id === editingCharId);
+  if(!char) return;
+  
+  const newName = document.getElementById('editName').value.trim();
+  
+  if(!newName){
+    alert('請輸入角色名稱');
+    return;
+  }
+  
+  if(newName !== char.name && chars.some(c => c.name === newName)){
+    alert('角色名稱已存在');
+    return;
+  }
+  
+  char.name = newName;
+  char.job = document.getElementById('editJob').value;
+  char.level = parseInt(document.getElementById('editLevel').value);
+  char.damage = parseFloat(document.getElementById('editDamage').value) || 0;
+  char.availableDays = getSelectedDays('edit');
+  char.timeStart = document.getElementById('editTimeStart').value || '';
+  char.timeEnd = document.getElementById('editTimeEnd').value || '';
+  char.times = selectedEditTimes;
+  
+  saveToLocal();
+  render();
+  closeEditModal();
+}
+
+// ==================== 隊伍管理 ====================
+function createTeam(){
+  const size = prompt('請輸入隊伍人數 (1-6):', '6');
+  if(!size) return;
+  
+  const teamSize = parseInt(size);
+  if(isNaN(teamSize) || teamSize < 1 || teamSize > 6){
+    alert('請輸入 1-6 之間的數字');
+    return;
+  }
+  
+  const name = prompt('請輸入隊伍名稱:', `隊伍 ${teams.length + 1}`);
+  if(!name) return;
+  
+  const team = {
+    id: Date.now().toString(),
+    name: name.trim(),
+    size: teamSize,
+    members: []
+  };
+  
+  teams.push(team);
+  saveToLocal();
+  render();
+}
+
+function deleteTeam(id){
+  if(!confirm('確定要刪除這個隊伍嗎？')){
+    return;
+  }
+  
+  teams = teams.filter(t => t.id !== id);
+  if(selectedTeamId === id){
+    selectedTeamId = null;
+  }
+  saveToLocal();
+  render();
+}
+
+function selectTeam(id){
+  selectedTeamId = id;
+  render();
+}
+
+function removeMember(teamId, charId){
+  const team = teams.find(t => t.id === teamId);
+  if(!team) return;
+  
+  team.members = team.members.filter(m => m !== charId);
+  saveToLocal();
+  render();
+}
+
+function autoTeam(){
+  const size = prompt('請輸入隊伍人數 (1-6):', '6');
+  if(!size) return;
+  
+  const teamSize = parseInt(size);
+  if(isNaN(teamSize) || teamSize < 1 || teamSize > 6){
+    alert('請輸入 1-6 之間的數字');
+    return;
+  }
+  
+  // 計算每個角色已加入幾個隊伍
+  const teamCounts = {};
+  chars.forEach(c => {
+    teamCounts[c.id] = teams.filter(t => 
+      t.members && t.members.includes(c.id)
+    ).length;
+  });
+  
+  // 只選擇加入少於2個隊伍的角色
+  const available = chars.filter(c => teamCounts[c.id] < 2);
+  
+  if(available.length === 0){
+    alert('所有角色都已達到隊伍數量上限（每人最多2個隊伍）');
+    return;
+  }
+  
+  if(available.length < teamSize){
+    const confirm_msg = `可用角色只有 ${available.length} 位，少於隊伍人數 ${teamSize}，是否繼續組隊？`;
+    if(!confirm(confirm_msg)){
+      return;
+    }
+  }
+  
+  const healers = available.filter(c => c.job === '祭司')
+    .sort((a, b) => {
+      // 優先選擇加入隊伍較少的
+      const aCount = teamCounts[a.id];
+      const bCount = teamCounts[b.id];
+      if(aCount !== bCount) return aCount - bCount;
+      // 隊伍數相同時，按等級排序（等級高的優先）
+      if(b.level !== a.level) return b.level - a.level;
+      // 等級相同時，按戰力排序
+      return (b.damage || 0) - (a.damage || 0);
+    });
+  const others = available.filter(c => c.job !== '祭司');
+  
+  const selected = [];
+  
+  if(healers.length > 0) selected.push(healers[0]);
+  
+  const sortedOthers = others.sort((a, b) => {
+    // 優先選擇加入隊伍較少的
+    const aCount = teamCounts[a.id];
+    const bCount = teamCounts[b.id];
+    if(aCount !== bCount) return aCount - bCount;
+    // 隊伍數相同時，按等級排序（等級高的優先）
+    if(b.level !== a.level) return b.level - a.level;
+    // 等級相同時，按戰力排序
+    return (b.damage || 0) - (a.damage || 0);
+  });
+  
+  for(const char of sortedOthers){
+    if(selected.length >= teamSize) break;
+    selected.push(char);
+  }
+  
+  if(selected.length === 0){
+    alert('沒有可用的角色');
+    return;
+  }
+  
+  const team = {
+    id: Date.now().toString(),
+    name: `智能隊伍 ${teams.length + 1}`,
+    size: teamSize,
+    members: selected.map(c => c.id)
+  };
+  
+  teams.push(team);
+  selectedTeamId = team.id;
+  saveToLocal();
+  render();
+  
+  let message = `✅ 智能組隊完成！已加入 ${selected.length} 名角色`;
+  if(!selected.find(c => c.job === '祭司')){
+    message += '\n⚠️ 提醒：隊伍中沒有祭司（補師）';
+  }
+  alert(message);
+}
+
+// ==================== 拖放 ====================
+let draggedCharId = null;
+
+function handleDragStart(e){
+  draggedCharId = e.currentTarget.dataset.charId;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function handleDragEnd(e){
+  e.currentTarget.classList.remove('dragging');
+  draggedCharId = null;
+}
+
+function handleDragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+
+function handleDragLeave(e){
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function handleDrop(e, teamId){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  
+  if(!draggedCharId) return;
+  
+  const team = teams.find(t => t.id === teamId);
+  if(!team) return;
+  
+  const members = team.members || [];
+  
+  if(members.length >= team.size){
+    alert('隊伍已滿');
+    return;
+  }
+  
+  if(members.includes(draggedCharId)){
+    alert('該角色已在隊伍中');
+    return;
+  }
+  
+  // 檢查該角色已經加入幾個隊伍
+  const teamCount = teams.filter(t => 
+    t.members && t.members.includes(draggedCharId)
+  ).length;
+  
+  const char = chars.find(c => c.id === draggedCharId);
+  const maxTimes = char?.times || 1;
+  
+  if(teamCount >= maxTimes){
+    alert(`${char?.name || '該角色'} 已經加入 ${maxTimes} 個隊伍，無法再加入更多隊伍`);
+    return;
+  }
+  
+  team.members.push(draggedCharId);
+  saveToLocal();
+  render();
+}
+
+// ==================== 渲染 ====================
+function renderChars(){
+  const filter = document.getElementById('filterName').value.toLowerCase();
+  const jobFilter = document.getElementById('filterJob').value;
+  
+  const filtered = chars.filter(c => {
+    const matchName = c.name.toLowerCase().includes(filter);
+    const matchJob = !jobFilter || c.job === jobFilter;
+    return matchName && matchJob;
+  }).sort((a, b) => {
+    // 按等級排序，等級高的在前
+    if(b.level !== a.level) return b.level - a.level;
+    // 等級相同時按戰力排序
+    return (b.damage || 0) - (a.damage || 0);
+  });
+  
+  // 更新統計
+  document.getElementById('totalChars').textContent = filtered.length;
+  
+  const avgLvl = filtered.length > 0 
+    ? Math.round(filtered.reduce((sum, c) => sum + c.level, 0) / filtered.length)
+    : 0;
+  document.getElementById('avgLevel').textContent = avgLvl;
+  
+  const totalDmg = filtered.reduce((sum, c) => sum + (c.damage || 0), 0);
+  document.getElementById('totalDamage').textContent = totalDmg.toFixed(1);
+  
+  // 渲染角色卡片
+  const grid = document.getElementById('charGrid');
+  if(filtered.length === 0){
+    grid.innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted)">
+        <div style="font-size:64px;margin-bottom:16px">👥</div>
+        <div style="font-size:16px">還沒有角色</div>
+        <div style="font-size:13px;margin-top:8px">開始新增你的公會成員吧！</div>
+      </div>
+    `;
+    return;
+  }
+  
+  grid.innerHTML = filtered.map(c => {
+    const timeDisplay = formatTimeDisplay(c.availableDays, c.timeStart, c.timeEnd);
+    const maxTimes = c.times || 1;
+    
+    return `
+      <div class="char-card" draggable="true" data-char-id="${c.id}"
+           ondragstart="handleDragStart(event)"
+           ondragend="handleDragEnd(event)">
+        <div class="char-header">
+          <div>
+            <div class="char-name">
+              ${escapeHtml(c.name)}
+              <span style="display:inline-block;margin-left:6px;padding:2px 8px;background:${maxTimes === 2 ? 'linear-gradient(135deg,#0ea5a6,#7dd3fc)' : 'rgba(255,255,255,0.1)'};color:${maxTimes === 2 ? '#052025' : 'var(--muted)'};border-radius:4px;font-size:10px;font-weight:700">${maxTimes === 2 ? '14場' : '7場'}</span>
+            </div>
+            <span class="char-job">${c.job}</span>
+          </div>
+        </div>
+        <div class="char-stats">
+          <span>⚔️ Lv.${c.level}</span>
+          ${c.damage ? `<span>💪 ${c.damage}</span>` : ''}
+        </div>
+        ${timeDisplay ? `<div class="char-time">${escapeHtml(timeDisplay)}</div>` : ''}
+        <div class="char-actions">
+          <button class="btn-small btn-ghost" onclick="openEditModal('${c.id}')">✏️ 編輯</button>
+          <button class="btn-small btn-danger" onclick="deleteChar('${c.id}')">🗑️ 刪除</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderTeams(){
+  const container = document.getElementById('teamsContainer');
+  
+  if(teams.length === 0){
+    container.innerHTML = `
+      <div style="text-align:center;padding:80px 20px;color:var(--muted)">
+        <div style="font-size:72px;margin-bottom:20px">🎯</div>
+        <div style="font-size:18px;font-weight:600;margin-bottom:8px">還沒有隊伍</div>
+        <div style="font-size:14px">點擊上方按鈕開始組隊！</div>
+      </div>
+    `;
+    renderTeamInfo();
+    renderAvailableChars();
+    return;
+  }
+  
+  container.innerHTML = teams.map(t => {
+    const members = (t.members || [])
+      .map(id => chars.find(c => c.id === id))
+      .filter(Boolean)
+      .sort((a, b) => {
+        // 按等級排序（等級高的在前）
+        if(b.level !== a.level) return b.level - a.level;
+        // 等級相同時按戰力排序
+        return (b.damage || 0) - (a.damage || 0);
+      });
+    const isSelected = t.id === selectedTeamId;
+    
+    return `
+      <div class="team-card ${isSelected ? 'selected' : ''}"
+           onclick="selectTeam('${t.id}')"
+           ondragover="handleDragOver(event)"
+           ondragleave="handleDragLeave(event)"
+           ondrop="handleDrop(event, '${t.id}')">
+        <div class="team-header">
+          <div class="team-name">${escapeHtml(t.name)}</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="team-count">${members.length}/${t.size}</span>
+            <button class="btn-small btn-danger" onclick="event.stopPropagation();deleteTeam('${t.id}')">🗑️</button>
+          </div>
+        </div>
+        <div class="team-members">
+          ${members.map(m => `
+            <div class="member-slot">
+              <div class="member-info">
+                <div class="member-name">${escapeHtml(m.name)}</div>
+                <div class="member-detail">${m.job} · Lv.${m.level}${m.damage ? ` · ${m.damage}` : ''}</div>
+              </div>
+              <button class="btn-small btn-ghost" onclick="event.stopPropagation();removeMember('${t.id}','${m.id}')">✖️</button>
+            </div>
+          `).join('')}
+          ${Array(t.size - members.length).fill(0).map(() => `
+            <div class="empty-slot">拖曳角色到這裡</div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  renderTeamInfo();
+  renderAvailableChars();
+}
+
+function renderAvailableChars(){
+  const container = document.getElementById('availableChars');
+  const statsContainer = document.getElementById('availableStats');
+  if(!container) return;
+  
+  const filter = document.getElementById('teamFilterName')?.value.toLowerCase() || '';
+  const jobFilter = document.getElementById('teamFilterJob')?.value || '';
+  const dayFilter = document.getElementById('teamFilterDay')?.value || '';
+  
+  // 計算每個角色加入了幾個隊伍
+  const teamCounts = {};
+  chars.forEach(c => {
+    teamCounts[c.id] = teams.filter(t => 
+      t.members && t.members.includes(c.id)
+    ).length;
+  });
+  
+  // 過濾角色
+  const filtered = chars.filter(c => {
+    const matchName = c.name.toLowerCase().includes(filter);
+    const matchJob = !jobFilter || c.job === jobFilter;
+    
+    // 時間篩選
+    let matchDay = true;
+    if(dayFilter){
+      if(c.availableDays && c.availableDays.length > 0){
+        if(dayFilter === '全週'){
+          matchDay = c.availableDays.includes('全週');
+        } else {
+          matchDay = c.availableDays.includes(dayFilter) || c.availableDays.includes('全週');
+        }
+      } else {
+        matchDay = false;
+      }
+    }
+    
+    return matchName && matchJob && matchDay;
+  }).sort((a, b) => {
+    // 計算是否已滿
+    const aMaxTimes = a.times || 1;
+    const bMaxTimes = b.times || 1;
+    const aCount = teamCounts[a.id];
+    const bCount = teamCounts[b.id];
+    const aIsFull = aCount >= aMaxTimes;
+    const bIsFull = bCount >= bMaxTimes;
+    
+    // 1. 優先顯示未滿的角色（未滿在前，已滿在後）
+    if(aIsFull !== bIsFull) return aIsFull ? 1 : -1;
+    
+    // 2. 都未滿或都已滿時，按場次排序（14場在前，7場在後）
+    if(bMaxTimes !== aMaxTimes) return bMaxTimes - aMaxTimes;
+    
+    // 3. 場次相同時，按加入隊伍數排序（少的在前）
+    if(aCount !== bCount) return aCount - bCount;
+    
+    // 4. 隊伍數相同時，按等級排序（等級高的在前）
+    if(b.level !== a.level) return b.level - a.level;
+    
+    // 5. 等級也相同時，按戰力排序
+    return (b.damage || 0) - (a.damage || 0);
+  });
+  
+  // 統計資訊
+  const availableCount = filtered.filter(c => {
+    const maxTimes = c.times || 1;
+    return teamCounts[c.id] < maxTimes;
+  }).length;
+  const fullCount = filtered.filter(c => {
+    const maxTimes = c.times || 1;
+    return teamCounts[c.id] >= maxTimes;
+  }).length;
+  
+  if(statsContainer){
+    statsContainer.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span>✅ 可用: <strong style="color:var(--accent)">${availableCount}</strong></span>
+        <span>🔒 已滿: <strong style="color:var(--danger)">${fullCount}</strong></span>
+      </div>
+      <div style="margin-top:4px;font-size:11px;opacity:0.8">
+        ${filtered.length < chars.length ? `篩選結果: ${filtered.length}/${chars.length}` : '拖曳角色到隊伍中'}
+      </div>
+    `;
+  }
+  
+  if(filtered.length === 0){
+    container.innerHTML = `
+      <div style="text-align:center;padding:40px 10px;color:var(--muted)">
+        <div style="font-size:48px;margin-bottom:12px">👥</div>
+        <div style="font-size:13px">${chars.length > 0 ? '沒有符合條件的角色' : '沒有角色'}</div>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = filtered.map(c => {
+    const teamCount = teamCounts[c.id];
+    const maxTimes = c.times || 1;
+    const isFull = teamCount >= maxTimes;
+    const timeDisplay = formatTimeDisplay(c.availableDays, c.timeStart, c.timeEnd);
+    
+    return `
+      <div class="available-char-item ${isFull ? 'assigned' : ''}" 
+           draggable="${!isFull}"
+           data-char-id="${c.id}"
+           ${!isFull ? `ondragstart="handleDragStart(event)" ondragend="handleDragEnd(event)"` : ''}
+           title="${isFull ? `已加入${maxTimes}個隊伍，無法再加入` : '可拖曳到隊伍'}">
+        <div class="available-char-name">
+          ${escapeHtml(c.name)}
+          ${maxTimes === 2 ? '<span style="display:inline-block;margin-left:6px;padding:2px 6px;background:linear-gradient(135deg,#0ea5a6,#7dd3fc);color:#052025;border-radius:4px;font-size:10px;font-weight:700">14場</span>' : ''}
+        </div>
+        <div class="available-char-meta">
+          <span class="available-char-job">${c.job}</span>
+          <span>Lv.${c.level}</span>
+          ${c.damage ? `<span>💪${c.damage}</span>` : ''}
+        </div>
+        ${timeDisplay ? `
+          <div style="font-size:10px;margin-top:4px;color:var(--muted)">
+            ${escapeHtml(timeDisplay)}
+          </div>
+        ` : ''}
+        ${teamCount > 0 ? `
+          <div style="font-size:10px;margin-top:4px;color:${isFull ? 'var(--danger)' : 'var(--warning)'}">
+            ${isFull ? '🔒' : '✓'} 已加入 ${teamCount}/${maxTimes} 個隊伍
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function renderTeamInfo(){
+  const infoDiv = document.getElementById('teamInfo');
+  
+  if(!selectedTeamId){
+    infoDiv.innerHTML = `
+      <div style="text-align:center;padding:40px 20px;color:var(--muted)">
+        <div style="font-size:48px;margin-bottom:12px">📊</div>
+        <div>選擇一個隊伍<br>查看詳細資訊</div>
+      </div>
+    `;
+    return;
+  }
+  
+  const team = teams.find(t => t.id === selectedTeamId);
+  if(!team){
+    selectedTeamId = null;
+    renderTeamInfo();
+    return;
+  }
+  
+  const members = (team.members || []).map(id => chars.find(c => c.id === id)).filter(Boolean);
+  
+  const avgLevel = members.length > 0 
+    ? Math.round(members.reduce((sum, m) => sum + m.level, 0) / members.length) 
+    : 0;
+  
+  const totalDamage = members.reduce((sum, m) => sum + (m.damage || 0), 0);
+  
+  const jobCount = {};
+  members.forEach(m => {
+    jobCount[m.job] = (jobCount[m.job] || 0) + 1;
+  });
+  
+  const hasHealer = members.some(m => m.job === '祭司');
+  
+  infoDiv.innerHTML = `
+    <div class="info-section">
+      <div class="info-label">隊伍名稱</div>
+      <div class="info-box">
+        <strong style="font-size:16px">${escapeHtml(team.name)}</strong>
+      </div>
+    </div>
+    
+    <div class="info-section">
+      <div class="info-label">隊伍狀態</div>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-label">人數</div>
+          <div class="stat-value-large">${members.length}/${team.size}</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">平均等級</div>
+          <div class="stat-value-large">${avgLevel}</div>
+        </div>
+      </div>
+    </div>
+    
+    ${Object.keys(jobCount).length > 0 ? `
+    <div class="info-section">
+      <div class="info-label">職業分布</div>
+      <div class="job-list">
+        ${Object.entries(jobCount).map(([job, count]) => `
+          <div class="job-item">
+            <span>${job}</span>
+            <strong style="color:var(--accent)">${count} 人</strong>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    ` : ''}
+    
+    ${members.some(m => m.availableDays && m.availableDays.length > 0) ? `
+    <div class="info-section">
+      <div class="info-label">成員遊玩時間</div>
+      ${members.filter(m => m.availableDays && m.availableDays.length > 0).map(m => {
+        const timeStr = formatTimeDisplay(m.availableDays, m.timeStart, m.timeEnd);
+        return `
+        <div class="info-box">
+          <div style="font-weight:600;margin-bottom:4px">${escapeHtml(m.name)}</div>
+          <div style="font-size:12px;color:var(--muted)">${escapeHtml(timeStr)}</div>
+        </div>
+      `}).join('')}
+    </div>
+    ` : ''}
+  `;
+}
+
+function render(){
+  if(currentTab === 'chars'){
+    renderChars();
+  } else if(currentTab === 'teams'){
+    renderTeams();
+  } else if(currentTab === 'attendance'){
+    renderAttendance();
+  }
+  
+  // 更新職業篩選器
+  const jobs = [...new Set(chars.map(c => c.job))].sort();
+  const jobOptions = '<option value="">所有職業</option>' + 
+    jobs.map(j => `<option value="${j}">${j}</option>`).join('');
+  
+  document.getElementById('filterJob').innerHTML = jobOptions;
+  
+  // 更新隊伍管理頁面的職業篩選器
+  const teamFilterJob = document.getElementById('teamFilterJob');
+  if(teamFilterJob){
+    teamFilterJob.innerHTML = jobOptions;
+  }
+}
+
+// ==================== 資料匯出/匯入 ====================
+function exportData(){
+  const data = {
+    version: '4.0',
+    exportDate: new Date().toISOString(),
+    chars: chars,
+    teams: teams,
+    attendance: attendance
+  };
+  
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `楓之谷公會_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(){
+  document.getElementById('importFile').click();
+}
+
+document.getElementById('importFile').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    try {
+      const data = JSON.parse(event.target.result);
+      
+      if(!data.chars || !data.teams){
+        alert('檔案格式錯誤');
+        return;
+      }
+      
+      if(!confirm('匯入資料將會覆蓋現有資料，確定要繼續嗎？')){
+        return;
+      }
+      
+      chars = data.chars;
+      teams = data.teams;
+      attendance = data.attendance || {};
+      selectedTeamId = null;
+      
+      saveToLocal();
+      initCurrentWeek();
+      render();
+      
+      alert('✅ 資料匯入成功！');
+    } catch(err) {
+      alert('檔案解析失敗：' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+function clearAllData(){
+  if(!confirm('⚠️ 確定要清除所有資料嗎？此操作無法復原！')){
+    return;
+  }
+  
+  chars = [];
+  teams = [];
+  attendance = {};
+  selectedTeamId = null;
+  
+  localStorage.removeItem('maplestory_chars');
+  localStorage.removeItem('maplestory_teams');
+  localStorage.removeItem('maplestory_attendance');
+  
+  render();
+  alert('✅ 所有資料已清除');
+}
+
+// ==================== 工具函數 ====================
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ==================== 出席管理功能 ====================
+function getWeekKey(date = new Date()){
+  const year = date.getFullYear();
+  const onejan = new Date(year, 0, 1);
+  const week = Math.ceil((((date - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+  return `${year}-W${String(week).padStart(2, '0')}`;
+}
+
+function getWeekDisplay(weekKey){
+  const [year, week] = weekKey.split('-W');
+  return `${year}年 第${parseInt(week)}週`;
+}
+
+function initCurrentWeek(){
+  currentWeekKey = getWeekKey();
+  updateWeekDisplay();
+}
+
+function updateWeekDisplay(){
+  const el = document.getElementById('currentWeek');
+  if(el){
+    el.textContent = getWeekDisplay(currentWeekKey);
+  }
+}
+
+function prevWeek(){
+  const [year, week] = currentWeekKey.split('-W');
+  let weekNum = parseInt(week) - 1;
+  let yearNum = parseInt(year);
+  
+  if(weekNum < 1){
+    yearNum -= 1;
+    weekNum = 52;
+  }
+  
+  currentWeekKey = `${yearNum}-W${String(weekNum).padStart(2, '0')}`;
+  updateWeekDisplay();
+  renderAttendance();
+}
+
+function nextWeek(){
+  const [year, week] = currentWeekKey.split('-W');
+  let weekNum = parseInt(week) + 1;
+  let yearNum = parseInt(year);
+  
+  if(weekNum > 52){
+    yearNum += 1;
+    weekNum = 1;
+  }
+  
+  currentWeekKey = `${yearNum}-W${String(weekNum).padStart(2, '0')}`;
+  updateWeekDisplay();
+  renderAttendance();
+}
+
+function resetToCurrentWeek(){
+  currentWeekKey = getWeekKey();
+  updateWeekDisplay();
+  renderAttendance();
+}
+
+function toggleTrained(charId){
+  if(!attendance[currentWeekKey]){
+    attendance[currentWeekKey] = {};
+  }
+  if(!attendance[currentWeekKey][charId]){
+    attendance[currentWeekKey][charId] = { trained: false, inGuild: false };
+  }
+  
+  attendance[currentWeekKey][charId].trained = !attendance[currentWeekKey][charId].trained;
+  saveToLocal();
+  renderAttendance();
+}
+
+function toggleInGuild(charId){
+  if(!attendance[currentWeekKey]){
+    attendance[currentWeekKey] = {};
+  }
+  if(!attendance[currentWeekKey][charId]){
+    attendance[currentWeekKey][charId] = { trained: false, inGuild: false };
+  }
+  
+  attendance[currentWeekKey][charId].inGuild = !attendance[currentWeekKey][charId].inGuild;
+  saveToLocal();
+  renderAttendance();
+}
+
+function markAllTrained(){
+  if(!confirm('確定要標記所有成員為「已練功」嗎？')){
+    return;
+  }
+  
+  if(!attendance[currentWeekKey]){
+    attendance[currentWeekKey] = {};
+  }
+  
+  chars.forEach(c => {
+    if(!attendance[currentWeekKey][c.id]){
+      attendance[currentWeekKey][c.id] = { trained: false, inGuild: false };
+    }
+    attendance[currentWeekKey][c.id].trained = true;
+  });
+  
+  saveToLocal();
+  renderAttendance();
+}
+
+function markAllInGuild(){
+  if(!confirm('確定要標記所有成員為「在公會」嗎？')){
+    return;
+  }
+  
+  if(!attendance[currentWeekKey]){
+    attendance[currentWeekKey] = {};
+  }
+  
+  chars.forEach(c => {
+    if(!attendance[currentWeekKey][c.id]){
+      attendance[currentWeekKey][c.id] = { trained: false, inGuild: false };
+    }
+    attendance[currentWeekKey][c.id].inGuild = true;
+  });
+  
+  saveToLocal();
+  renderAttendance();
+}
+
+function clearWeekData(){
+  if(!confirm(`確定要清除 ${getWeekDisplay(currentWeekKey)} 的所有記錄嗎？`)){
+    return;
+  }
+  
+  delete attendance[currentWeekKey];
+  saveToLocal();
+  renderAttendance();
+}
+
+function renderAttendance(){
+  const container = document.getElementById('attendanceList');
+  if(!container) return;
+  
+  const weekData = attendance[currentWeekKey] || {};
+  
+  // 計算統計
+  let trainedCount = 0;
+  let inGuildCount = 0;
+  
+  chars.forEach(c => {
+    const data = weekData[c.id] || { trained: false, inGuild: false };
+    if(data.trained) trainedCount++;
+    if(data.inGuild) inGuildCount++;
+  });
+  
+  // 更新統計顯示
+  document.getElementById('attTotalChars').textContent = chars.length;
+  document.getElementById('attTrainedCount').textContent = trainedCount;
+  document.getElementById('attInGuildCount').textContent = inGuildCount;
+  
+  const rate = chars.length > 0 ? Math.round((trainedCount / chars.length) * 100) : 0;
+  document.getElementById('attRate').textContent = rate + '%';
+  
+  // 渲染列表
+  if(chars.length === 0){
+    container.innerHTML = `
+      <div style="text-align:center;padding:60px 20px;color:var(--muted)">
+        <div style="font-size:64px;margin-bottom:16px">👥</div>
+        <div style="font-size:16px">還沒有角色</div>
+        <div style="font-size:13px;margin-top:8px">請先到角色管理新增成員</div>
+      </div>
+    `;
+    return;
+  }
+  
+  // 按等級排序
+  const sortedChars = [...chars].sort((a, b) => {
+    if(b.level !== a.level) return b.level - a.level;
+    return (b.damage || 0) - (a.damage || 0);
+  });
+  
+  container.innerHTML = `
+    <table class="attendance-table">
+      <thead>
+        <tr style="color:var(--muted);font-size:12px;text-transform:uppercase">
+          <th style="text-align:left;padding:8px 16px">角色</th>
+          <th style="text-align:left;padding:8px 16px">職業</th>
+          <th style="text-align:center;padding:8px 16px">等級</th>
+          <th style="text-align:center;padding:8px 16px">戰力</th>
+          <th style="text-align:center;padding:8px 16px">已練功</th>
+          <th style="text-align:center;padding:8px 16px">在公會</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sortedChars.map(c => {
+          const data = weekData[c.id] || { trained: false, inGuild: false };
+          
+          return `
+            <tr class="attendance-row">
+              <td class="char-name-cell">${escapeHtml(c.name)}</td>
+              <td class="char-job-cell">${c.job}</td>
+              <td style="text-align:center;font-weight:600">Lv.${c.level}</td>
+              <td style="text-align:center;color:var(--accent)">${c.damage || '-'}</td>
+              <td class="checkbox-cell">
+                <span class="status-icon ${data.trained ? 'checked' : ''}" 
+                      onclick="toggleTrained('${c.id}')"
+                      title="${data.trained ? '已練功' : '未練功'}">
+                  ${data.trained ? '✅' : '⬜'}
+                </span>
+              </td>
+              <td class="checkbox-cell">
+                <span class="status-icon ${data.inGuild ? 'checked' : ''}" 
+                      onclick="toggleInGuild('${c.id}')"
+                      title="${data.inGuild ? '在公會' : '不在公會'}">
+                  ${data.inGuild ? '🏰' : '⬜'}
+                </span>
+              </td>
+            </tr>
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+// ==================== 事件監聽 ====================
+document.getElementById('addBtn').addEventListener('click', addChar);
+document.getElementById('clearBtn').addEventListener('click', () => {
+  document.getElementById('nameInput').value = '';
+  document.getElementById('levelInput').value = '';
+  document.getElementById('damageInput').value = '';
+  setSelectedDays([]);
+  document.getElementById('timeStart').value = '';
+  document.getElementById('timeEnd').value = '';
+  
+  // 重置場次選擇
+  selectedTimes = 1;
+  document.querySelectorAll('.times-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if(btn.dataset.times === '1'){
+      btn.classList.add('active');
+    }
+  });
+  
+  document.getElementById('nameInput').focus();
+});
+
+document.getElementById('filterName').addEventListener('input', renderChars);
+document.getElementById('filterJob').addEventListener('change', renderChars);
+
+// 隊伍管理頁面的搜尋
+const teamFilterInput = document.getElementById('teamFilterName');
+if(teamFilterInput){
+  teamFilterInput.addEventListener('input', renderAvailableChars);
+}
+
+const teamFilterJob = document.getElementById('teamFilterJob');
+if(teamFilterJob){
+  teamFilterJob.addEventListener('change', renderAvailableChars);
+}
+
+const teamFilterDay = document.getElementById('teamFilterDay');
+if(teamFilterDay){
+  teamFilterDay.addEventListener('change', renderAvailableChars);
+}
+
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape' && document.getElementById('editModal').classList.contains('show')){
+    closeEditModal();
+  }
+});
+
+document.getElementById('editModal').addEventListener('click', e => {
+  if(e.target === document.getElementById('editModal')){
+    closeEditModal();
+  }
+});
+
+document.getElementById('nameInput').addEventListener('keypress', e => {
+  if(e.key === 'Enter') addChar();
+});
+
+// 全週複選框邏輯
+document.getElementById('dayAll').addEventListener('change', (e) => {
+  if(e.target.checked){
+    for(let i = 1; i <= 7; i++){
+      document.getElementById(`day${i}`).checked = false;
+    }
+  }
+});
+
+for(let i = 1; i <= 7; i++){
+  document.getElementById(`day${i}`).addEventListener('change', (e) => {
+    if(e.target.checked){
+      document.getElementById('dayAll').checked = false;
+    }
+  });
+}
+
+document.getElementById('editDayAll').addEventListener('change', (e) => {
+  if(e.target.checked){
+    for(let i = 1; i <= 7; i++){
+      document.getElementById(`editDay${i}`).checked = false;
+    }
+  }
+});
+
+for(let i = 1; i <= 7; i++){
+  document.getElementById(`editDay${i}`).addEventListener('change', (e) => {
+    if(e.target.checked){
+      document.getElementById('editDayAll').checked = false;
+    }
+  });
+}
+
+// ==================== 初始化 ====================
+loadFromLocal();
+</script>
+
+</body>
+</html>
