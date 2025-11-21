@@ -1565,7 +1565,7 @@ function renderAvailableChars(){
     const matchDay = !filterDay || days.includes(filterDay) || days.includes('全週');
     
     return matchName && matchJob && matchDay;
-  });
+  }).sort((a, b) => b.level - a.level); // 按等級從高到低排序
   
   const html = availableChars.map(c => {
     const days = c.days || ['全週'];
@@ -1602,7 +1602,14 @@ function renderAvailableChars(){
 }
 
 function renderTeams(){
-  const html = teams.map((team, idx) => `
+  const html = teams.map((team, idx) => {
+    // 取得隊伍成員並按等級排序
+    const sortedMembers = team.members
+      .map(mid => chars.find(c => c.id === mid))
+      .filter(char => char) // 過濾掉不存在的角色
+      .sort((a, b) => b.level - a.level); // 按等級從高到低排序
+    
+    return `
     <div class="team-card" data-team-id="${idx}">
       <div class="team-header">
         <div class="team-title">隊伍 ${idx + 1}</div>
@@ -1612,9 +1619,8 @@ function renderTeams(){
         </div>
       </div>
       <div class="team-members" data-team-id="${idx}">
-        ${team.members.map(mid => {
-          const char = chars.find(c => c.id === mid);
-          if(!char) return '';
+        ${sortedMembers.map(char => {
+          const mid = char.id;
           
           // 計算角色在幾個隊伍中
           const teamsCount = teams.filter(t => t.members.includes(mid)).length;
@@ -1640,7 +1646,7 @@ function renderTeams(){
         }).join('')}
       </div>
     </div>
-  `).join('');
+  `}).join('');
   
   document.getElementById('teamsContainer').innerHTML = html || '<p style="text-align:center;color:var(--muted);padding:40px">尚未建立隊伍<br><small>點擊「新增隊伍」開始組隊</small></p>';
   
