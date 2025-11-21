@@ -741,11 +741,6 @@
         </div>
         
         <div class="form-group">
-          <label>等級 *</label>
-          <input type="number" id="levelInput" placeholder="例如：250" min="1" max="300" />
-        </div>
-        
-        <div class="form-group">
           <label>職業</label>
           <select id="jobInput">
             <option value="">選擇職業（選填）</option>
@@ -762,6 +757,11 @@
             <option value="格鬥家">格鬥家</option>
             <option value="神槍手">神槍手</option>
           </select>
+        </div>
+        
+        <div class="form-group">
+          <label>等級 *</label>
+          <input type="number" id="levelInput" placeholder="例如：250" min="1" max="300" />
         </div>
         
         <div class="form-group">
@@ -1361,7 +1361,7 @@ function renderChars(){
     const matchName = c.name.toLowerCase().includes(filterName);
     const matchJob = !filterJob || c.job === filterJob;
     return matchName && matchJob;
-  });
+  }).sort((a, b) => b.level - a.level); // 按等級從高到低排序
   
   // 統計
   const totalChars = chars.length;
