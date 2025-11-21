@@ -303,16 +303,6 @@
     }
     
     .char-level{font-size:14px;color:var(--muted);margin-bottom:6px}
-    .char-damage{
-      display:inline-block;
-      font-size:11px;
-      color:#fbbf24;
-      background:rgba(251,191,36,0.1);
-      padding:3px 8px;
-      border-radius:5px;
-      border:1px solid rgba(251,191,36,0.2);
-      margin-bottom:6px;
-    }
     
     .char-days{
       display:flex;
@@ -763,11 +753,6 @@
           <label>等級 *</label>
           <input type="number" id="levelInput" placeholder="例如：250" min="1" max="300" />
         </div>
-        
-        <div class="form-group">
-          <label>戰力（選填）</label>
-          <input type="text" id="damageInput" placeholder="例如：500E" />
-        </div>
       </div>
       
       <div class="form-group" style="margin-top:20px">
@@ -1016,11 +1001,6 @@
           <option value="格鬥家">格鬥家</option>
           <option value="神槍手">神槍手</option>
         </select>
-      </div>
-      
-      <div class="form-group">
-        <label>戰力（選填）</label>
-        <input type="text" id="editDamage" />
       </div>
       
       <div class="form-group">
@@ -1281,7 +1261,6 @@ function addChar(){
   const name = document.getElementById('nameInput').value.trim();
   const level = parseInt(document.getElementById('levelInput').value);
   const job = document.getElementById('jobInput').value;
-  const damage = document.getElementById('damageInput').value.trim();
   
   if(!name){
     alert('請輸入角色名稱！');
@@ -1305,7 +1284,6 @@ function addChar(){
     name,
     level,
     job: job || '未分類',
-    damage: damage || '',
     days,
     timeSlot: timeSlot || '',
     times: selectedTimes,
@@ -1397,7 +1375,6 @@ function renderChars(){
         </div>
       </div>
       <div class="char-level">等級 ${c.level}</div>
-      ${c.damage ? `<div class="char-damage">💥 ${c.damage}</div>` : ''}
       <div class="char-days">
         ${days.map(d => `<span class="day-badge">${d}</span>`).join('')}
       </div>
@@ -1423,7 +1400,6 @@ function editChar(id){
   document.getElementById('editName').value = char.name;
   document.getElementById('editLevel').value = char.level;
   document.getElementById('editJob').value = char.job === '未分類' ? '' : char.job;
-  document.getElementById('editDamage').value = char.damage || '';
   document.getElementById('editTimeSlot').value = char.timeSlot || '';
   
   // 設定天數
@@ -1468,7 +1444,6 @@ function saveEdit(){
   const name = document.getElementById('editName').value.trim();
   const level = parseInt(document.getElementById('editLevel').value);
   const job = document.getElementById('editJob').value;
-  const damage = document.getElementById('editDamage').value.trim();
   
   if(!name){
     alert('請輸入角色名稱！');
@@ -1490,7 +1465,6 @@ function saveEdit(){
   char.name = name;
   char.level = level;
   char.job = job || '未分類';
-  char.damage = damage;
   char.days = days;
   char.timeSlot = timeSlot;
   char.times = editSelectedTimes;
@@ -1587,7 +1561,6 @@ function renderAvailableChars(){
         </div>
       </div>
       <div class="char-level">等級 ${c.level}</div>
-      ${c.damage ? `<div class="char-damage">💥 ${c.damage}</div>` : ''}
       <div class="char-days">
         ${days.map(d => `<span class="day-badge">${d}</span>`).join('')}
       </div>
@@ -1636,7 +1609,6 @@ function renderTeams(){
                 <div class="member-meta">
                   <span>${char.job}</span>
                   <span>Lv.${char.level}</span>
-                  ${char.damage ? `<span>${char.damage}</span>` : ''}
                   <span style="color:${teamsCount >= maxTeams ? '#fbbf24' : 'var(--accent)'}">(${teamsCount}/${maxTeams}隊)</span>
                 </div>
               </div>
@@ -2007,9 +1979,15 @@ function updateLevel(charId, newLevel){
   // 更新等級
   attendance[currentWeekKey][charId].currentLevel = newLevelNum;
   
+  // 自動更新角色本身的等級
+  char.level = newLevelNum;
+  
   // 練功狀態會在 renderAttendance 中自動判斷
   
   saveToLocal();
+  renderChars(); // 重新渲染角色列表以顯示更新後的等級
+  renderAvailableChars(); // 重新渲染可用角色列表
+  renderTeams(); // 重新渲染隊伍列表
   renderAttendance();
 }
 
@@ -2377,7 +2355,6 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   document.getElementById('nameInput').value = '';
   document.getElementById('levelInput').value = '';
   document.getElementById('jobInput').value = '';
-  document.getElementById('damageInput').value = '';
   setSelectedDays([]);
   document.getElementById('timeSlot').value = '';
   
